@@ -20,7 +20,7 @@ iopp 是一个基于 Linux `/proc` 文件系统的进程文件IO监控工具，�
 
 ```bash
 # 克隆仓库
-git clone --depth 1 -b Make git@gitlab.com:higkoohk/hello.git ./iopp
+git clone --depth 1 -b main git@github.com/biliops/iopp.git ./iopp
 cd ./iopp
 
 # 编译安装（仅支持 Linux 操作系统）
