@@ -13,8 +13,157 @@
 #include <getopt.h>
 
 #define PROC "/proc"
-#define VERSION "0.0.1"
-#define VERSION_DATE "2026.06.26"
+#define VERSION "0.0.2"
+#define VERSION_DATE "2026.06.29"
+
+// 语言选项
+#define LANG_ZH_CN 0  // 简体中文
+#define LANG_ZH_TW 1  // 中文繁体
+#define LANG_EN    2  // 英文
+
+// 输出格式选项
+#define FMT_EMOJI 0   // 表情符
+#define FMT_TEXT  1   // 纯文本
+
+int current_lang = LANG_ZH_CN;  // 默认简体中文
+int current_fmt = FMT_EMOJI;    // 默认表情符
+
+// 多语言字符串结构体
+typedef struct {
+    const char *err_buf;        // 错误-值大于缓冲区
+    const char *warn_path;      // 警告-文件名长度
+    const char *err_num;        // 错误-不是有效数字
+    const char *label_pid;      // 进程ID
+    const char *label_rchar;    // 读字符
+    const char *label_wchar;    // 写字符
+    const char *label_syscr;    // 系统读
+    const char *label_syscw;    // 系统写
+    const char *label_read;     // 读字节/读KB/读MB
+    const char *label_write;    // 写字节/写KB/写MB
+    const char *label_cancel;   // 取消写
+    const char *label_cmd;      // 命令行
+    const char *usage_title;    // 用法
+    const char *opt_command;    // -c, --command
+    const char *opt_help;       // -h, --help
+    const char *opt_idle;       // -i, --idle
+    const char *opt_kilobytes;  // -k, --kilobytes
+    const char *opt_megabytes;  // -m, --megabytes
+    const char *opt_human;      // -u, --human-readable
+    const char *opt_version;    // -v, --version
+    const char *opt_lang;       // -L, --lang
+    const char *opt_format;     // -e, --emoji / -t, --text
+    const char *ver_info;       // 版本信息
+    const char *lang_setting;   // 语言设置
+    const char *fmt_setting;    // 格式设置
+} lang_strings_t;
+
+// 字符串表
+static const lang_strings_t lang_strings[] = {
+    // 简体中文 (LANG_ZH_CN)
+    {
+        .err_buf    = "错误 - 值大于缓冲区",
+        .warn_path  = "警告 - 文件名长度可能超出缓冲区",
+        .err_num    = "错误：'%s' 不是有效的数字参数",
+        .label_pid  = "进程ID",
+        .label_rchar= "读字符",
+        .label_wchar= "写字符",
+        .label_syscr= "系统读",
+        .label_syscw= "系统写",
+        .label_read = "读字节",
+        .label_write= "写字节",
+        .label_cancel= "取消写",
+        .label_cmd  = "命令行",
+        .usage_title= "用法",
+        .opt_command= "-c, --command 显示完整命令行",
+        .opt_help   = "-h, --help 显示帮助",
+        .opt_idle   = "-i, --idle 隐藏空闲进程",
+        .opt_kilobytes="-k, --kilobytes 以千字节显示数据",
+        .opt_megabytes="-m, --megabytes 以兆字节显示数据",
+        .opt_human  = "-u, --human-readable 自动调整显示单位",
+        .opt_version="-v, --version 显示版本信息",
+        .opt_lang   = "-L, --lang <zh|tw|en> 设置语言 (默认: zh)",
+        .opt_format = "-e, --emoji 使用表情符 (默认) | -t, --text 纯文本",
+        .ver_info   = "iopp 版本",
+        .lang_setting="语言: 简体中文",
+        .fmt_setting="格式: 表情符",
+    },
+    // 中文繁体 (LANG_ZH_TW)
+    {
+        .err_buf    = "錯誤 - 值大於緩衝區",
+        .warn_path  = "警告 - 檔案名稱長度可能超出緩衝區",
+        .err_num    = "錯誤：'%s' 不是有效的數字參數",
+        .label_pid  = "進程ID",
+        .label_rchar= "讀字符",
+        .label_wchar= "寫字符",
+        .label_syscr= "系統讀",
+        .label_syscw= "系統寫",
+        .label_read = "讀位元組",
+        .label_write= "寫位元組",
+        .label_cancel= "取消寫",
+        .label_cmd  = "命令列",
+        .usage_title= "用法",
+        .opt_command= "-c, --command 顯示完整命令列",
+        .opt_help   = "-h, --help 顯示說明",
+        .opt_idle   = "-i, --idle 隱藏空閒進程",
+        .opt_kilobytes="-k, --kilobytes 以千位元組顯示資料",
+        .opt_megabytes="-m, --megabytes 以兆位元組顯示資料",
+        .opt_human  = "-u, --human-readable 自動調整顯示單位",
+        .opt_version="-v, --version 顯示版本資訊",
+        .opt_lang   = "-L, --lang <zh|tw|en> 設定語言 (預設: zh)",
+        .opt_format = "-e, --emoji 使用表情符 (預設) | -t, --text 純文字",
+        .ver_info   = "iopp 版本",
+        .lang_setting="語言: 繁體中文",
+        .fmt_setting="格式: 表情符",
+    },
+    // 英文 (LANG_EN)
+    {
+        .err_buf    = "Error - value exceeds buffer",
+        .warn_path  = "Warning - filename may exceed buffer",
+        .err_num    = "Error: '%s' is not a valid numeric argument",
+        .label_pid  = "PID",
+        .label_rchar= "RCHAR",
+        .label_wchar= "WCHAR",
+        .label_syscr= "SYSCR",
+        .label_syscw= "SYSCW",
+        .label_read = "READ",
+        .label_write= "WRITE",
+        .label_cancel= "CANCEL",
+        .label_cmd  = "COMMAND",
+        .usage_title= "Usage",
+        .opt_command= "-c, --command Show full command line",
+        .opt_help   = "-h, --help Show this help message",
+        .opt_idle   = "-i, --idle Hide idle processes",
+        .opt_kilobytes="-k, --kilobytes Display data in kilobytes",
+        .opt_megabytes="-m, --megabytes Display data in megabytes",
+        .opt_human  = "-u, --human-readable Auto-scale display units",
+        .opt_version="-v, --version Show version information",
+        .opt_lang   = "-L, --lang <zh|tw|en> Set language (default: zh)",
+        .opt_format = "-e, --emoji Use emoji (default) | -t, --text Plain text",
+        .ver_info   = "iopp version",
+        .lang_setting="Language: English",
+        .fmt_setting="Format: Emoji",
+    }
+};
+
+// 获取当前语言的字符串
+static inline const lang_strings_t *LANG() {
+    return &lang_strings[current_lang];
+}
+
+// 表情符定义
+static const char *EMOJI_ERR = "✖";
+static const char *EMOJI_WARN = "⚠";
+static const char *EMOJI_INFO = "ℹ";
+
+// 纯文本替代
+static const char *TEXT_ERR = "[ERROR]";
+static const char *TEXT_WARN = "[WARNING]";
+static const char *TEXT_INFO = "[INFO]";
+
+// 根据格式获取前缀
+static inline const char *ERR_PREFIX() { return (current_fmt == FMT_EMOJI) ? EMOJI_ERR : TEXT_ERR; }
+static inline const char *WARN_PREFIX() { return (current_fmt == FMT_EMOJI) ? EMOJI_WARN : TEXT_WARN; }
+static inline const char *INFO_PREFIX() { return (current_fmt == FMT_EMOJI) ? EMOJI_INFO : TEXT_INFO; }
 
 #define GET_VALUE(v) \
 		p = strchr(p, ':'); \
@@ -24,7 +173,7 @@
 		length = q - p; \
 		if (length >= BUFFERLEN) \
 		{ \
-			printf("❌  错误 - 值大于缓冲区: %d\n", __LINE__); \
+			printf("%s  %s: %d\n", ERR_PREFIX(), LANG()->err_buf, __LINE__); \
 			exit(1); \
 		} \
 		strncpy(value, p, length); \
@@ -117,7 +266,7 @@ int get_cmdline(struct io_node *ion) {
 
 	length = snprintf(filename, BUFFERLEN, "%s/%d/cmdline", PROC, ion->pid);
 	if (length == BUFFERLEN)
-		printf("⚠️  警告 - 文件名长度可能超出缓冲区: %d\n",__LINE__);
+		printf("%s  %s: %d\n", WARN_PREFIX(), LANG()->warn_path, __LINE__);
 	fd = open(filename, O_RDONLY);
 	if (fd == -1)
 		return 1;
@@ -161,7 +310,7 @@ int get_tcomm(struct io_node *ion) {
 
 	length = snprintf(filename, BUFFERLEN, "%s/%d/stat", PROC, ion->pid);
 	if (length == BUFFERLEN)
-		printf("⚠️  警告 - 文件名长度可能超出缓冲区: %d\n",__LINE__);
+		printf("%s  %s: %d\n", WARN_PREFIX(), LANG()->warn_path, __LINE__);
 	fd = open(filename, O_RDONLY);
 	if (fd == -1)
 		return 1;
@@ -215,13 +364,29 @@ void get_stats() {
 
 	// 显示列标题
 	if (hr_flag == 1)
-		printf("%5s %6s %6s %8s %8s %6s %6s %6s %-20s\n", "进程ID", "读字符", "写字符","系统读", "系统写", "读字节", "写字节", "取消写", "命令行");
+		printf("%5s %6s %6s %8s %8s %6s %6s %6s %-20s\n",
+			LANG()->label_pid, LANG()->label_rchar, LANG()->label_wchar,
+			LANG()->label_syscr, LANG()->label_syscw,
+			LANG()->label_read, LANG()->label_write, LANG()->label_cancel,
+			LANG()->label_cmd);
 	else if (kb_flag == 1)
-		printf("%5s %8s %8s %8s %8s %8s %8s %8s %s\n", "进程ID", "读字符", "写字符","系统读", "系统写", "读KB", "写KB", "取消KB", "命令行");
+		printf("%5s %8s %8s %8s %8s %8s %8s %8s %s\n",
+			LANG()->label_pid, LANG()->label_rchar, LANG()->label_wchar,
+			LANG()->label_syscr, LANG()->label_syscw,
+			"读KB", "写KB", "取消KB",
+			LANG()->label_cmd);
 	else if (mb_flag == 1)
-		printf("%5s %8s %8s %8s %8s %8s %8s %8s %s\n", "进程ID", "读字符", "写字符","系统读", "系统写", "读MB", "写MB", "取消MB", "命令行");
+		printf("%5s %8s %8s %8s %8s %8s %8s %8s %s\n",
+			LANG()->label_pid, LANG()->label_rchar, LANG()->label_wchar,
+			LANG()->label_syscr, LANG()->label_syscw,
+			"读MB", "写MB", "取消MB",
+			LANG()->label_cmd);
 	else
-		printf("%5s %8s %8s %8s %8s %8s %8s %8s %s\n", "进程ID", "读字符", "写字符","系统读", "系统写", "读字节", "写字节", "取消写", "命令行");
+		printf("%5s %8s %8s %8s %8s %8s %8s %8s %s\n",
+			LANG()->label_pid, LANG()->label_rchar, LANG()->label_wchar,
+			LANG()->label_syscr, LANG()->label_syscw,
+			LANG()->label_read, LANG()->label_write, LANG()->label_cancel,
+			LANG()->label_cmd);
 
 	while ((ent = readdir(dir)) != NULL) { // 遍历进程表并为每个进程显示一行
 		int rc = 0;
@@ -260,7 +425,7 @@ void get_stats() {
 		// 读取 'io' 文件
 		length = snprintf(filename, BUFFERLEN, "%s/%s/io", PROC, ent->d_name);
 		if (length == BUFFERLEN)
-			printf("⚠️  警告 - 文件名长度可能超出缓冲区: %d\n",__LINE__);
+			printf("%s  %s: %d\n", WARN_PREFIX(), LANG()->warn_path, __LINE__);
 		fd = open(filename, O_RDONLY);
 		if (fd == -1) {
 			free(ion);
@@ -389,15 +554,17 @@ void upsert_data(struct io_node *ion) {
 }
 
 void usage() {
-	printf("用法: iopp -h|--help  ℹ️\n");
-	printf("用法: iopp [-ci] [-k|-m] [间隔时间 [次数]]\n");
-	printf("            -c, --command 显示完整命令行\n");
-	printf("            -h, --help 显示帮助\n");
-	printf("            -i, --idle 隐藏空闲进程\n");
-	printf("            -k, --kilobytes 以千字节显示数据\n");
-	printf("            -m, --megabytes 以兆字节显示数据\n");
-	printf("            -u, --human-readable 自动调整显示单位\n");
-	printf("            -v, --version 显示版本信息\n");
+	printf("%s: iopp -h|--help %s\n", LANG()->usage_title, INFO_PREFIX());
+	printf("%s: iopp [-ci] [-k|-m] [-L lang] [-e|-t] [interval [count]]\n", LANG()->usage_title);
+	printf("            %s\n", LANG()->opt_command);
+	printf("            %s\n", LANG()->opt_help);
+	printf("            %s\n", LANG()->opt_idle);
+	printf("            %s\n", LANG()->opt_kilobytes);
+	printf("            %s\n", LANG()->opt_megabytes);
+	printf("            %s\n", LANG()->opt_human);
+	printf("            %s\n", LANG()->opt_version);
+	printf("            %s\n", LANG()->opt_lang);
+	printf("            %s\n", LANG()->opt_format);
 }
 
 int main(int argc, char *argv[]) {
@@ -416,16 +583,19 @@ int main(int argc, char *argv[]) {
 				{ "kilobytes", no_argument, 0, 'k' },
 				{ "megabytes", no_argument, 0, 'm' },
 				{ "version", no_argument, 0, 'v' },
+				{ "lang", required_argument, 0, 'L' },
+				{ "emoji", no_argument, 0, 'e' },
+				{ "text", no_argument, 0, 't' },
 				{ 0, 0, 0, 0 }
 		};
 
-		c = getopt_long(argc, argv, "chikmuv", long_options, &option_index);
+		c = getopt_long(argc, argv, "chikmuvL:et", long_options, &option_index);
 		if (c == -1) { // 处理间隔时间和次数参数
 			if (argc == optind)
 				break; // 没有额外参数
 			else if ((argc - optind) == 1) {
 				if (!is_valid_number(argv[optind])) {
-					printf("❌  错误：'%s' 不是有效的数字参数\n", argv[optind]);
+					printf("%s  %s: '%s'\n", ERR_PREFIX(), LANG()->err_num, argv[optind]);
 					usage();
 					return 3;
 				}
@@ -434,12 +604,12 @@ int main(int argc, char *argv[]) {
 			}
 			else if ((argc - optind) == 2) {
 				if (!is_valid_number(argv[optind])) {
-					printf("❌  错误：'%s' 不是有效的数字参数\n", argv[optind]);
+					printf("%s  %s: '%s'\n", ERR_PREFIX(), LANG()->err_num, argv[optind]);
 					usage();
 					return 3;
 				}
 				if (!is_valid_number(argv[optind + 1])) {
-					printf("❌  错误：'%s' 不是有效的数字参数\n", argv[optind + 1]);
+					printf("%s  %s: '%s'\n", ERR_PREFIX(), LANG()->err_num, argv[optind + 1]);
 					usage();
 					return 3;
 				}
@@ -473,8 +643,29 @@ int main(int argc, char *argv[]) {
 			hr_flag = 1;
 			break;
 		case 'v':
-			printf("ℹ️  iopp Version %s - %s\n", VERSION, VERSION_DATE);
+			printf("%s  %s %s - %s\n", INFO_PREFIX(), LANG()->ver_info, VERSION, VERSION_DATE);
+			printf("    %s | %s\n", LANG()->lang_setting, LANG()->fmt_setting);
 			return 0;
+		case 'L':
+			if (optarg) {
+				if (strcmp(optarg, "zh") == 0)
+					current_lang = LANG_ZH_CN;
+				else if (strcmp(optarg, "tw") == 0)
+					current_lang = LANG_ZH_TW;
+				else if (strcmp(optarg, "en") == 0)
+					current_lang = LANG_EN;
+				else {
+					printf("%s  %s: '%s'\n", ERR_PREFIX(), "Invalid language, use: zh|tw|en", optarg);
+					return 3;
+				}
+			}
+			break;
+		case 'e':
+			current_fmt = FMT_EMOJI;
+			break;
+		case 't':
+			current_fmt = FMT_TEXT;
+			break;
 		default:
 			usage();
 			return 2;
