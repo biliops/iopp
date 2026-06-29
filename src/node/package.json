@@ -1,0 +1,14 @@
+{
+  "name": "iopp",
+  "version": "0.0.1",
+  "description": "I/O Process Monitor",
+  "main": "iopp.js",
+  "bin": {
+    "iopp": "./iopp.js"
+  },
+  "scripts": {
+    "start": "node iopp.js"
+  },
+  "keywords": ["linux", "io", "process", "monitor"],
+  "license": "MIT"
+}

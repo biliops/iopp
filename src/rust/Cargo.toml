@@ -1,0 +1,9 @@
+[package]
+name = "iopp"
+version = "0.0.1"
+edition = "2021"
+description = "I/O Process Monitor"
+license = "MIT"
+
+[dependencies]
+clap = { version = "4.0", features = ["derive"] }
